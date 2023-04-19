@@ -1,0 +1,46 @@
+plugins {
+    id 'java'
+}
+
+group 'com'
+version '1.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.elasticsearch:elasticsearch:${version_elasticsearch}"
+}
+
+
+def distName = "${rootProject.name}-${project.version}"
+def distDir = "$buildDir/distribution"
+def archDir = "$buildDir/distribution/${distName}"
+
+tasks.register('packageDistribution') {
+    dependsOn = [build]
+
+    doLast {
+        file(archDir).mkdirs()
+        copy {
+            from "$buildDir/libs/"
+            into archDir
+        }
+        copy {
+            from "$projectDir/elasticsearch/"
+            into archDir
+            expand([
+                    version              : project.version,
+                    version_elasticsearch: version_elasticsearch
+            ])
+        }
+    }
+}
+
+tasks.register('packageZip', Zip) {
+    dependsOn = [build, packageDistribution]
+    archiveFileName = "${distName}.zip"
+    destinationDirectory = file(distDir)
+    from file(archDir)
+}
